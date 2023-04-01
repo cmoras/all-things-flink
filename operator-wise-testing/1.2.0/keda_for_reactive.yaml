@@ -1,0 +1,40 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: taskamanger-scaler
+  namespace: flink
+spec:
+  scaleTargetRef:
+    kind: Deployment 
+    name: basic-example-taskmanager
+    apiVersion: apps/v1
+  pollingInterval: 60
+  cooldownPeriod: 300
+  idleReplicaCount: 0
+  minReplicaCount: 3
+  maxReplicaCount: 6
+  fallback:
+    failureThreshold: 2
+    replicas: 3
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus-operated.monitoring.svc:9090
+        metricName: container_memory_working_set_bytes
+        query: ((avg(container_memory_working_set_bytes{pod=~"basic-example-taskmanager.*",container="flink-main-container"})) / (1000 * 1000))
+        threshold: '0.2'
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 300
+          policies:
+            - type: Pods
+              value: 1
+              periodSeconds: 120
+        scaleUp:
+          stabilizationWindowSeconds: 300
+          policies:
+            - type: Pods
+              value: 1
+              periodSeconds: 120

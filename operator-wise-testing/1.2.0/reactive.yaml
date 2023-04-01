@@ -1,0 +1,68 @@
+################################################################################
+#  Licensed to the Apache Software Foundation (ASF) under one
+#  or more contributor license agreements.  See the NOTICE file
+#  distributed with this work for additional information
+#  regarding copyright ownership.  The ASF licenses this file
+#  to you under the Apache License, Version 2.0 (the
+#  "License"); you may not use this file except in compliance
+#  with the License.  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+# limitations under the License.
+################################################################################
+
+apiVersion: flink.apache.org/v1beta1
+kind: FlinkDeployment
+metadata:
+  name: basic-example
+spec:
+  image: clen/flink:1.15
+  flinkVersion: v1_15
+  flinkConfiguration:
+    taskmanager.numberOfTaskSlots: "2"
+    scheduler-mode: "REACTIVE"
+    execution.checkpointing.interval: "10m"
+    execution.checkpointing.min-pause: "15m"
+    execution.checkpointing.mode: "EXACTLY_ONCE"
+    jobmanager.adaptive-scheduler.min-parallelism-increase: "5"
+    high-availability.storageDir: s3://flink-apache/sa
+    state.checkpoints.dir: s3://flink-apache/ck
+    state.savepoints.dir: s3://flink-apache/sp
+    metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory
+    metrics.reporter.prom.port: "9250"
+    metrics.reporters: prom
+    
+  serviceAccount: flink
+  jobManager:
+    resource:
+      memory: "1024m"
+      cpu: 0.75
+  taskManager:
+    replicas: 2
+    resource:
+      memory: "1000m"
+      cpu: 0.75
+  podTemplate:
+    spec:
+      containers:
+        - name: flink-main-container
+          ports:
+            - containerPort: 9250
+              name: metrics
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /flink-data
+              name: flink-volume
+      volumes:
+        - name: flink-volume
+          emptyDir:
+            sizeLimit: 20Gi
+  mode: standalone
+  job:
+    jarURI: local:///opt/flink/examples/streaming/TopSpeedWindowing.jar
+    upgradeMode: stateless

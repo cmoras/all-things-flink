@@ -1,0 +1,12 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: flink-kubernetes-cluster
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: basic-checkpoint-ha-example
+  podMetricsEndpoints:
+      - port: metrics

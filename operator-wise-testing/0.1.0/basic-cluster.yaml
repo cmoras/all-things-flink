@@ -1,0 +1,47 @@
+apiVersion: flink.apache.org/v1alpha1
+kind: FlinkDeployment
+metadata:
+  name: basic-checkpoint-ha-example
+spec:
+  image: flink:1.15
+  flinkVersion: v1_15
+  flinkConfiguration:
+    taskmanager.numberOfTaskSlots: "2"
+    execution.checkpointing.min-pause: 45 s
+    execution.checkpointing.timeout: 1 min
+    execution.checkpointing.interval: 45 s
+    state.backend: rocksdb
+    state.backend.incremental: "true"
+    state.backend.rocksdb.memory.managed: "true"
+    state.checkpoints.dir: file:///flink-data/checkpoints
+    state.savepoints.dir: file:///flink-data/savepoints
+    high-availability: org.apache.flink.kubernetes.highavailability.KubernetesHaServicesFactory
+    high-availability.storageDir: file:///flink-data/ha
+    kubernetes.operator.metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter
+    kubernetes.operator.metrics.reporter.prom.port: "9999"
+  jobManager:
+    replicas: 2
+    resource:
+      memory: "1024m"
+      cpu: 1
+  taskManager:
+    resource:
+      memory: "1024m"
+      cpu: 1
+  podTemplate:
+    spec:
+      serviceAccount: flink-operator
+      containers:
+        - name: flink-main-container
+          volumeMounts:
+          - mountPath: /flink-data
+            name: flink-volume
+      volumes:
+      - name: flink-volume
+        emptyDir:
+          sizeLimit: 1Gi
+  job:
+    jarURI: local:///opt/flink/examples/streaming/StateMachineExample.jar
+    parallelism: 2
+    upgradeMode: last-state
+    state: running
