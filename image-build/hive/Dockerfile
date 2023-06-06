@@ -18,6 +18,3 @@ RUN wget -O $FLINK_HOME/lib/flink-connector-hive_2.12-1.16.2.jar https://repo1.m
     wget -O $FLINK_HOME/lib/antlr-runtime-3.5.2.jar https://repo.maven.apache.org/maven2/org/antlr/antlr-runtime/3.5.2/antlr-runtime-3.5.2.jar && \
     wget -O $FLINK_HOME/lib/flink-sql-connector-hive-3.1.2_2.12-1.16.2.jar https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-hive-3.1.2_2.12/1.16.2/flink-sql-connector-hive-3.1.2_2.12-1.16.2.jar
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
-EXPOSE 6123 8081
-CMD ["help"]
