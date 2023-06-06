@@ -1,4 +1,4 @@
-FROM flink:1.16.2
+FROM flink:1.16.2@sha256:d836ec8670b74308df5300e48da1905d09c075cbdcf64ef77af3cc28593fceb9
 
 WORKDIR /opt/flink
 
