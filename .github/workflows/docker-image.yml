@@ -19,7 +19,12 @@ jobs:
         DOCKER_USER: ${{secrets.DOCKER_USER}}
         DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
       run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-    - name: Build the Docker image
-      run: docker build . --file image-build/Dockerfile -t clen/flink:1
+    - name: Build simple Docker image
+      run: docker build . --file image-build/simple/Dockerfile -t clen/flink:1
     - name: docker publish
       run:  docker push clen/flink:1
+    - name: build Docker image for hive-compatibility
+      run" docker build .  --file image-build/hive/Dockerfile -t clen:flink:hive-1.16.2
+    - name: docker publish
+      run:  docker push clen/flink:hive-1.16.2
+

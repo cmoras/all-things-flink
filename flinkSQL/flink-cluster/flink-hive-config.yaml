@@ -1,0 +1,9 @@
+execution:
+  current-catalog: myhive
+  current-database: mydatabase
+
+catalogs:
+  - name: myhive
+    type: hive
+    hive-conf-dir: /opt/hive-conf
+
