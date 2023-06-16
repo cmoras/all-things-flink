@@ -5,5 +5,5 @@ execution:
 catalogs:
   - name: myhive
     type: hive
-    hive-conf-dir: /opt/hive-conf
+    hive-conf-dir: /opt/flink/hive-conf
 

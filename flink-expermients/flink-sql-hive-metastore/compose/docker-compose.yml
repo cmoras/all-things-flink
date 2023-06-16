@@ -1,0 +1,115 @@
+version: '2.1'
+services:
+  sql-client:
+    image: fhueske/flink-sql-demo-client:1-FLINK-1.10-scala_2.11
+    build: ./client-image
+    depends_on:
+      - kafka
+      - jobmanager
+      - taskmanager
+      - mysql
+      - metastore
+      - minio
+    environment:
+      FLINK_JOBMANAGER_HOST: jobmanager
+      ZOOKEEPER_CONNECT: zookeeper
+      KAFKA_BOOTSTRAP: kafka
+      MYSQL_HOST: mysql
+      METASTORE_HOST: metastore
+      METASTORE_PORT: 9083
+    volumes:
+      - ./flinksql-init:/opt/sql-client/init
+  data-provider:
+    image: fhueske/flink-sql-demo-data:1
+    build: ./data-image
+    environment:
+      - MC_HOST_minio=http://sql-demo:demo-sql@minio:9000
+      - KAFKA_HOST=kafka:9092
+      - SPEEDUP=10.0
+    volumes:
+      - ./data:/opt/data/kafka
+#      -./data:/opt/data/minio  # all files located in /opt/data/minio are copied into Minio
+    depends_on:
+      - minio
+      - kafka
+  jobmanager:
+    image: fhueske/flink-s3:1.10.0-scala_2.11
+    build: ./flink-image
+    hostname: "jobmanager"
+    expose:
+      - "6123"
+    ports:
+      - "8081:8081"
+    command: jobmanager
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=jobmanager
+  taskmanager:
+    image: fhueske/flink-s3:1.10.0-scala_2.11
+    build: ./flink-image
+    expose:
+      - "6121"
+      - "6122"
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    links:
+      - jobmanager:jobmanager
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=jobmanager
+  metastore:
+    image: fhueske/hive-metastore:2.3.6
+    build: ./metastore-image
+    expose:
+      - "9083"
+    ports:
+      - "9083:9083"
+  minio:
+    image: minio/minio:latest
+    entrypoint: sh
+    command: -c 'mkdir -p /data/sql-demo && /usr/bin/minio server /data'
+    environment:
+      - MINIO_ACCESS_KEY=sql-demo
+      - MINIO_SECRET_KEY=demo-sql
+    expose:
+      - "9000"
+    ports:
+      - "9000:9000"
+  zookeeper:
+    image: wurstmeister/zookeeper:3.4.6
+    ports:
+      - "2181:2181"
+  kafka:
+    image: wurstmeister/kafka:2.12-2.2.1
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: "kafka"
+      KAFKA_ADVERTISED_PORT: "9092"
+      HOSTNAME_COMMAND: "route -n | awk '/UG[ \t]/{print $$2}'"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CREATE_TOPICS: "rates:1:1, lineitem:1:1, orders:1:1"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+  mysql:
+    image: mysql:8.0.19
+    command: --default-authentication-plugin=mysql_native_password --secure_file_priv=/data
+    environment:
+      MYSQL_USER: "sql-demo"
+      MYSQL_PASSWORD: "demo-sql"
+      MYSQL_DATABASE: "sql-demo"
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - ./mysql-init:/docker-entrypoint-initdb.d
+      - ./data:/data
+  grafana:
+      image: grafana/grafana
+      ports: 
+          - "3000:3000"
+      depends_on:
+          - mysql
+      volumes:
+          - ./grafana-init/provisioning/:/etc/grafana/provisioning/
+          - ./grafana-init/dashboard.json:/etc/grafana/dashboard.json
+          - ./grafana-init/grafana.ini:/etc/grafana/grafana.ini

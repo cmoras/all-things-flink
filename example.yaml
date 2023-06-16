@@ -1,7 +1,7 @@
 apiVersion: flink.apache.org/v1beta1
 kind: FlinkDeployment
 metadata:
-  namespace: trino-test
+  namespace: flink-test
   name: basic-example
 spec:
   image: clen/flink:hive-1.16.2
